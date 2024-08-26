@@ -2,7 +2,7 @@ import HeaderBox from "@/components/HeaderBox";
 import RightSidebar from "@/components/RightSidebar";
 import TotalBalanceBox from "@/components/TotalBalanceBox";
 import {redirect} from "next/navigation";
-import {getLoggedInUser} from "@/lib/appwrite";
+import {getLoggedInUser} from "@/lib/actions/user.actions";
 import {defaultUser} from "@/store/global";
 
 const banks = [

@@ -1,4 +1,4 @@
-import { getLoggedOutFromUser } from '@/lib/appwrite';
+import { getLoggedOutFromUser } from '@/lib/actions/user.actions';
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 

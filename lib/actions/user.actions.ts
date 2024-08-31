@@ -3,8 +3,8 @@
 import {cookies} from "next/headers";
 import {createAdminClient, createSessionClient} from "../appwrite";
 import {ID} from "node-appwrite";
-import {encryptId, parseStringify} from "../utils";
-import {defaultUser} from "@/store/global";
+import {encryptId, extractCustomerIdFromUrl, parseStringify} from "../utils";
+
 import {
   CountryCode,
   ProcessorTokenCreateRequest,
@@ -13,19 +13,47 @@ import {
 } from "plaid";
 import {plaidClient} from "../plaid";
 import { revalidatePath } from 'next/cache';
-import { addFundingSource } from './dwolla.actions';
+import { addFundingSource, createDwollaCustomer } from './dwolla.actions';
 
-export const SignUp = async (userData: SignUpParams) => {
-  const {email, password, firstName, lastName} = userData;
+const { APPWRITE_DATABASE_ID: DATABASE_ID,
+  APPWRITE_USER_COLLECTION_ID:USER_COLLECTION_ID,
+APPWRITE_BANK_COLLECTION_ID:BANK_COLLECTION_ID,
+APPWRITE_TRANSACTION_COLLECTION_ID:TRANSACTION_COLLECTION_ID,
+
+}=process.env
+
+export const SignUp = async ({ password, ...userData }: SignUpParams) => {
+  const {email, firstName, lastName} = userData;
+  let newUserAccount
   try {
-    const {account} = await createAdminClient();
+    const {account,database} = await createAdminClient();
 
-    const newUserAccount = await account.create(
+    newUserAccount = await account.create(
       ID.unique(),
       email,
       password,
       `${firstName} ${lastName}`
     );
+    if (!newUserAccount) throw new Error("Error creating user")
+    
+    const dwollaCustomerUrl = await createDwollaCustomer({
+      ...userData,
+      type: "personal",
+    })
+    if (!newUserAccount) throw new Error("Error creating customer")
+    const dwollaCustomerId=extractCustomerIdFromUrl(dwollaCustomerUrl!)
+    
+    const newUser = await database.createDocument(DATABASE_ID!, USER_COLLECTION_ID!, ID.unique(), {
+      ...userData,
+      userId: newUserAccount.$id,
+      dwollaCustomerId,
+      dwollaCustomerUrl
+      
+    })
+    
+    
+    
+    
     const session = await account.createEmailPasswordSession(email, password);
 
     cookies().set("appwrite-session", session.secret, {
@@ -34,7 +62,7 @@ export const SignUp = async (userData: SignUpParams) => {
       sameSite: "strict",
       secure: true,
     });
-    return parseStringify(newUserAccount);
+    return parseStringify(newUser);
   } catch (error) {
     console.error("SignUp Error: ", error);
     throw new Error("Failed to sign up.");
@@ -65,7 +93,7 @@ export const getLoggedInUser = async () => {
     const user = await account.get();
     return parseStringify(user);
   } catch (error) {
-    return defaultUser;
+    return null;
   }
 };
 
@@ -151,7 +179,24 @@ export const exchangePublicToken = async ({
 };
 
 
-function createBankAccount(arg0: { userId: string; bankId: string; accountId: any; accessToken: string; fundingSourceUrl: string; sharableId: string; }) {
-  throw new Error('Function not implemented.');
+export const createBankAccount= async ({ userId, bankId, accountId, accessToken,fundingSourceUrl,sharableId}:createBankAccountProps)=> {
+  try {
+    const { database } = await createAdminClient()
+    const bankAccount = database.createDocument(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      ID.unique(),
+      {
+        userId,
+        bankId,
+        accountId,
+        accessToken,
+        fundingSourceUrl,
+        sharableId,
+      }
+    );
+  } catch (error) {
+    
+  }
 }
 

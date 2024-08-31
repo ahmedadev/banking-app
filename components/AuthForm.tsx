@@ -12,36 +12,64 @@ import {AuthFormSchema} from "@/lib/utils";
 import {Loader2} from "lucide-react";
 import CustomInput from "@/components/CustomInput";
 import {SignIn, SignUp} from "@/lib/actions/user.actions";
-import {defaultUser} from "@/store/global";
-import {useRouter} from "next/navigation";
-import PlaidLink from './PlaidLink';
 
+import {useRouter} from "next/navigation";
+import PlaidLink from "./PlaidLink";
+const defaultValues = {
+  firstName: "",
+  lastName: "",
+  address1: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  dateOfBirth: "",
+  ssn: "",
+  email: "",
+  password: "",
+};
 const AuthForm = ({type}: {type: string}) => {
   const formSchema = AuthFormSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      address: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      birthOfDate: "",
-      ssn: "",
-      email: "",
-      password: "",
-    },
+    defaultValues: defaultValues,
   });
   const [IsLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(defaultUser);
+  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState({
+  //   $id: "user_001",
+  //   email: "johndoe@example.com",
+  //   userId: "user_001",
+  //   dwollaCustomerUrl: "https://api.dwolla.com/customers/12345",
+  //   dwollaCustomerId: "12345",
+  //   firstName: "John",
+  //   lastName: "Doe",
+  //   name: "John Doe",
+  //   address1: "123 Main St",
+  //   city: "Anytown",
+  //   state: "NY",
+  //   postalCode: "10001",
+  //   dateOfBirth: "1980-01-01",
+  //   ssn: "123-45-6789",
+  // });
   const router = useRouter();
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
+      const userData = {
+        firstName: data.firstName!,
+        lastName: data.lastName!,
+        address1: data.address1!,
+        city: data.city!,
+        state: data.state!,
+        postalCode: data.postalCode!,
+        dateOfBirth: data.dateOfBirth!,
+        ssn: data.ssn!,
+        email: data.email,
+        password: data.password,
+      };
       if (type === "sign-up") {
-        const newUser = await SignUp(data);
+        const newUser = await SignUp(userData);
         setUser(newUser);
       }
       if (type === "sign-in") {
@@ -53,7 +81,6 @@ const AuthForm = ({type}: {type: string}) => {
           router.push("/");
         }
       }
-      
     } catch (error) {
       console.log(error);
     } finally {
@@ -77,26 +104,20 @@ const AuthForm = ({type}: {type: string}) => {
         </Link>
         <div className="flex flex-col gap-1 md:gap-3">
           <h1 className="text-24 lg:text-36 font-semibold text-gray-900">
-            {user !== defaultUser
-              ? "Link Account"
-              : type === "sign-in"
-              ? "Sign In"
-              : "Sign Up"}
+            {user ? "Link Account" : type === "sign-in" ? "Sign In" : "Sign Up"}
             <p className="text-16 font-normal text-gray-600">
-              {user !== defaultUser
+              {user
                 ? "Link your account to get started"
                 : "Please enter your details"}
             </p>
           </h1>
         </div>
       </header>
-      {/* {user !== defaultUser ? ( */}
+      {user ? (
         <div className="flex flex-col gap-4">
-          <PlaidLink
-            user={user}
-          variant="primary"/>
+          <PlaidLink user={user} variant="primary" />
         </div>
-      {/* ) : ( */}
+      ) : (
         <>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -120,7 +141,7 @@ const AuthForm = ({type}: {type: string}) => {
                   </div>
                   <CustomInput
                     control={form.control}
-                    name={"address"}
+                    name={"address1"}
                     label={"Address1"}
                     placeholder={"Enter your specific address"}
                     type={"text"}
@@ -151,7 +172,7 @@ const AuthForm = ({type}: {type: string}) => {
                   <div className="flex gap-4">
                     <CustomInput
                       control={form.control}
-                      name={"birthOfDate"}
+                      name={"dateOfBirth"}
                       label={"Birth of Date"}
                       placeholder={"YYYY-MM-DD"}
                       type={"date"}
@@ -210,7 +231,7 @@ const AuthForm = ({type}: {type: string}) => {
             </Link>
           </footer>
         </>
-      {/* )} */}
+      )}
     </section>
   );
 };

@@ -3,7 +3,7 @@ import RightSidebar from "@/components/RightSidebar";
 import TotalBalanceBox from "@/components/TotalBalanceBox";
 import {redirect} from "next/navigation";
 import {getLoggedInUser} from "@/lib/actions/user.actions";
-import {defaultUser} from "@/store/global";
+
 
 const banks = [
   {
@@ -49,8 +49,8 @@ const banks = [
 export default async function Home() {
   const user = await getLoggedInUser();
 
-  if (user === defaultUser) {
-    // Redirect to sign-in if user is defaultUser
+  if (!user) {
+
     redirect("/sign-in");
   }
 
@@ -62,7 +62,7 @@ export default async function Home() {
           <HeaderBox
             type="greeting"
             title="Welcome"
-            user={user.name}
+            user={user?.name}
             subtext="Access and manage account and transactions efficiently."
           />
           <TotalBalanceBox
